@@ -1,0 +1,200 @@
+<?php
+class Server {
+	
+	/**
+	* The address of the server
+	* @var String
+	*/
+
+	//ported
+	private $address;
+	private $port;
+	private $master;
+	
+	/**
+	* The array of sockets (1 socket = 1 client)
+	* @var Array of resource
+	*/
+	//ported
+	private $sockets;
+	
+	/**
+	* The array of connected clients
+	* @var Array of clients
+	*/
+	//ported
+	private $clients;
+	
+	//ported
+	function Server($address, $port){
+		$this->address = $address;
+		$this->port = $port;
+		
+		// socket creation
+		$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+		socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
+	
+		socket_bind($socket, $this->address, $this->port);
+		socket_listen($socket, SOMAXCONN);
+		
+		$this->master = $socket;
+		$this->sockets = array($socket);
+		echo "Server started on {$this->address}:{$this->port}\n";
+	}
+	
+	
+	//ported
+	//Create a client object with its associated socket
+	private function connect($socket){
+		//WHY IS THE SOCKET VARIABLE STORED IN TWO ARRAYS?
+		//NO NEED FOR REDUNDANCY
+		$client = new Client($socket);
+		$this->clients[] = $client;
+		$this->sockets[] = $socket;
+	}
+	
+	//SHOULD BE INSIDE OF Client.class.php AND SET TO PRIVATE
+	private function findProtocol($client, $headers){
+		if(preg_match("/Sec-WebSocket-Version: (.*)\r\n/", $headers, $match)){
+			$version = $match[1];
+		}
+		else {
+			return false;
+		}
+		
+		switch($version){
+		case 8: case 13:
+			$client->setSpec("RFC6455");
+			Handshake::RFC6455($client, $headers);
+			break;
+		}
+	}
+	
+	//ported
+	//Disconnect clients and closes the connection
+	private function disconnect($client){
+		$i = array_search($client, $this->clients);
+		$j = array_search($client->getSocket(), $this->sockets);
+		
+		if($j >= 0){
+			array_splice($this->sockets, $j, 1);
+			socket_close($client->getSocket());
+		}
+		
+		if($i >= 0){
+			array_splice($this->clients, $i, 1);
+		}
+	}
+	
+	//ported
+	private function getClientBySocket($socket){
+		foreach($this->clients as $client)
+			if($client->getSocket() == $socket) {
+				return $client;
+			}
+		return false;
+	}
+	
+	//DEPRECIATED
+	//NEEDS TO BE REVISED. I LIKE THE CONCEPT BUT WE MAY NEED TO RETHINK
+	//IMPLEMENTATION
+	public function serverStats($client){
+		//We get the total number of nodes (less the server) connected to the server
+		$totalNodes = count($this->clients)-1;
+		//We get the index of the current node
+		$thisNode = array_search($client, $this->clients);
+		return "node:".$totalNodes.";ppid:".$thisNode.";";
+	}
+
+	//DEPRECIATED
+	//NEEDS TO BE REVISED
+	public function sendServerStats(){
+		foreach($this->clients as $node){
+			$this->send($node, $this->serverStats($node));
+		}
+	}
+
+	//MASSIVE FUNCTION. NEEDS TO BE CLEANED UP. COMMENTS NEED TO BE
+	//ADDED. CODE WILL NEED TO BE RE-WRITTEN AS NECESSARY ACCORDING TO NEW
+	//CLIENT CLASS.
+	public function run(){
+		while(true){
+			$changed_sockets = $this->sockets;
+			socket_select($changed_sockets, $write = null, $except = null,null);
+			foreach($changed_sockets as $socket){
+				if($socket == $this->master){
+					if(($acceptedSocket = socket_accept($this->master)) < 0) {
+						continue;
+					}
+					else {
+						$this->connect($acceptedSocket);
+					}
+				}
+				else {
+					$client = $this->getClientBySocket($socket);
+					if($client) {
+						$bytes = @socket_recv($socket, $data, 2048, 0);
+						if(!$client->getHandshake()) {
+							$this->findProtocol($client, $data);
+							$this->sendServerStats();
+						}
+						elseif($bytes === 0) {
+							$this->disconnect($client);
+							$this->sendServerStats();
+						}
+						else {
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private function send($client, $text){
+		$text=$client->spec->encode($text);
+		$length=strlen($text);
+		socket_write($client->getSocket(), $text, $length);
+	}
+}
+
+//NEEDS TO BE MOVED INTO THE CLIENT CLASS IN Client.class.php AND HANDLED WITH
+//THE CONSTRUCTOR.
+class Handshake{
+	
+	static function RFC6455($client, $headers){
+		if(preg_match("/GET (.*) HTTP/", $headers, $match)){$root = $match[1];}
+		if(preg_match("/Sec-WebSocket-Key: (.*)\r\n/", $headers, $match)){$key = $match[1];}
+		
+		$acceptKey = $key.'258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+		$acceptKey = base64_encode(sha1($acceptKey, true));
+
+		$upgrade = "HTTP/1.1 101 Switching Protocols\r\n".
+			"Upgrade: websocket\r\n".
+			"Connection: Upgrade\r\n".
+			"Sec-WebSocket-Accept: $acceptKey".
+			"\r\n\r\n";
+		
+		socket_write($client->getSocket(), $upgrade);
+		$client->setHandshake(true);
+		return true;
+	}
+	
+	static function Hybi10($client, $headers){
+		if(preg_match("/GET (.*) HTTP/", $headers, $match)){$root = $match[1];}
+		if(preg_match("/Sec-WebSocket-Key: (.*)\r\n/", $headers, $match)){$key = $match[1];}
+		
+		$acceptKey = $key.'258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+		$acceptKey = base64_encode(sha1($acceptKey, true));
+
+		$upgrade = "HTTP/1.1 101 Switching Protocols\r\n".
+			"Upgrade: websocket\r\n".
+			"Connection: Upgrade\r\n".
+			"Sec-WebSocket-Accept: $acceptKey".
+			"\r\n\r\n";
+		
+		socket_write($client->getSocket(), $upgrade);
+		$client->setHandshake(true);
+		return true;
+	}
+}
+?>
