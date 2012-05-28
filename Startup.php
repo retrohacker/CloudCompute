@@ -22,4 +22,5 @@ set_time_limit(($startup["time_limit"]) ? $startup["time_limit"] : $default['tim
 $address=($startup["address"]) ? $startup["address"] : $default['address'];
 $port=($startup["port"]) ? $startup["port"] : $default['port'];
 $crossSite=($startup["crossSite"]) ? $startup["crossSite"] : $default['crossSite'];
+$verbose=($startup["verbose"]) ? $startup["verbose"] : $default['verbose'];
 ?>

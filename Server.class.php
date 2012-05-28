@@ -81,6 +81,11 @@ class Server {
 		//Pretty sure we can make a more efficent queue. Possibly
 		//in a later version of the product
 		array_unshift($this->unallocatedSockets, $socket);
+		global $verbose;
+		if($verbose) {
+			echo "Added ".$socket." to the array\nCurrent array is:\n";
+			//for($i = 0; $i<
+		}
 	}
 
 	/**
