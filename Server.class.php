@@ -96,11 +96,13 @@ class Server {
 	 * Upgrades a simple socket connection to a node class
 	 */
 	private function createNode($socket) {
-		global $verbose;
 		$newNode = new Node($socket);
 		//Checks to see if the handshake was successful
 		if($newNode->getHandshake()) {
-			$this->nodeArray[] = $newNode;
+			global $verbose;
+			$this->nodesArray[] = $newNode;
+			echo "Created Node With ID: ".$newNode->getID()."\n";
+			return true;
 			if($verbose) {
 				echo "Created Node ".$newNode->getID()." From ".$newNode->getSocket();
 				echo " and added it to the array nodesArray:\n";
@@ -111,7 +113,6 @@ class Server {
 			} else {
 				echo "Created Node With ID: ".$newNode->getID()."\n";
 			}
-			return true;
 		}
 		//If not we disconnect the socket
 		else
@@ -144,8 +145,6 @@ class Server {
 			//successful
 			if($success)
 				$this->allocatedSockets[] = $socket;
-			else
-				$this->disconnectedSockets[] = $socket;
 		}
 	}
 
@@ -154,6 +153,7 @@ class Server {
 	 * returns true if successful, false otherwise
 	 */
 	private function disconnect($socket) {
+		echo "test\n";
 		//Search for the socket in the queues searching the one with
 		//the least number of clients first
 		$unallocatedKey = array_search($socket, $this->unallocatedSockets);
@@ -189,11 +189,8 @@ class Server {
 	 * queue
 	 */
 	private function deactivateNode($n) {
-		$nodes = sizeof($this->disconnectedSockets);
-		if($nodes<$n){$n=$nodes;}
 		for($i=0;$i<$n;$i++) {
 			$deletedNode = array_pop($this->disconnectedSockets);
-			
 			if($deletedNode!=null)
 				echo "Disconnected {$deletedNode->getID()}";
 		}
@@ -270,8 +267,10 @@ class Server {
 			$node = $this->getNodeBySocket($socket);
 			if($node) {
 				$bytes = socket_recv($socket, $data, 2048, 0);
-				echo "received: ".$bytes." bytes of data\n";
-				$this->process($node, $data);
+				if($bytes!=0){
+					echo "received: ".$bytes." bytes of data\n";
+					$this->process($node, $data);
+				}
 			}
 		}
 	}
@@ -297,3 +296,4 @@ class Server {
 	}
 }
 ?>
+>>>>>>> 0af45abd15421b46ec1cdd74bca333353fc52843
