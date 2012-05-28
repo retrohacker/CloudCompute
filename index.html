@@ -88,17 +88,15 @@ body{font:0.9em arial,helvetica;margin:0;color:#0f0;background-color:#000;}
 			document.body.appendChild(container);
 			
 			Sockit.timeLeft=Sockit.delayRestart;
-			Sockit.log(Sockit.timeLeft);
 			setTimeout(function(){Sockit.setReconnecting();Sockit.load();},Sockit.delayRestart*1000);
 			inter=setInterval(Sockit.checkTime,1000);
-			Sockit.log(inter);
+			Sockit.log("Attempting to reconnect in " + Sockit.timeLeft + " seconds");
 		},
 		
 		checkTime:function(){
 			Sockit.timeLeft--;
 			document.getElementById('time').innerHTML=Sockit.timeLeft;
 			if(Sockit.timeLeft>9){
-				Sockit.log(Sockit.timeLeft);
 				document.getElementById('time').innerHTML="0:"+Sockit.timeLeft;
 			}
 			else{

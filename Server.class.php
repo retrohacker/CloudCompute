@@ -81,17 +81,36 @@ class Server {
 		//Pretty sure we can make a more efficent queue. Possibly
 		//in a later version of the product
 		array_unshift($this->unallocatedSockets, $socket);
+		global $verbose;
+		if($verbose) {
+			echo "Socket ".$socket." has been added to the array";
+			echo " unallocated sockets which now contains:\n";
+			for($i=0; $i<sizeof($this->unallocatedSockets);$i++) {
+				echo $this->unallocatedSockets[$i].", ";
+			}
+			echo "\n";
+		}
 	}
 
 	/**
 	 * Upgrades a simple socket connection to a node class
 	 */
 	private function createNode($socket) {
+		global $verbose;
 		$newNode = new Node($socket);
 		//Checks to see if the handshake was successful
 		if($newNode->getHandshake()) {
-			$this->nodesArray[] = $newNode;
-			echo "Created Node With ID: ".$newNode->getID()."\n";
+			$this->nodeArray[] = $newNode;
+			if($verbose) {
+				echo "Created Node ".$newNode->getID()." From ".$newNode->getSocket();
+				echo " and added it to the array nodesArray:\n";
+				for($i=0;$i<sizeof($this->nodeArray);$i++) {
+					echo $this->nodeArray[$i]->getID().":".$this->nodeArray[$i]->getSocket().", ";
+				}
+				echo "\n";
+			} else {
+				echo "Created Node With ID: ".$newNode->getID()."\n";
+			}
 			return true;
 		}
 		//If not we disconnect the socket
@@ -125,6 +144,8 @@ class Server {
 			//successful
 			if($success)
 				$this->allocatedSockets[] = $socket;
+			else
+				$this->disconnectedSockets[] = $socket;
 		}
 	}
 
@@ -133,7 +154,6 @@ class Server {
 	 * returns true if successful, false otherwise
 	 */
 	private function disconnect($socket) {
-		echo "test\n";
 		//Search for the socket in the queues searching the one with
 		//the least number of clients first
 		$unallocatedKey = array_search($socket, $this->unallocatedSockets);
@@ -169,8 +189,11 @@ class Server {
 	 * queue
 	 */
 	private function deactivateNode($n) {
+		$nodes = sizeof($this->disconnectedSockets);
+		if($nodes<$n){$n=$nodes;}
 		for($i=0;$i<$n;$i++) {
 			$deletedNode = array_pop($this->disconnectedSockets);
+			
 			if($deletedNode!=null)
 				echo "Disconnected {$deletedNode->getID()}";
 		}
