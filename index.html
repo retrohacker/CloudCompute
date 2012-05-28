@@ -22,7 +22,7 @@ body{font:0.9em arial,helvetica;margin:0;color:#0f0;background-color:#000;}
 		
 		load:function(){
 			try{
-				Sockit.sock=new WebSocket("ws://192.168.1.105:8080/cloudCompute/master.php"); //do we need MozWebSocket?
+				Sockit.sock=new WebSocket("ws://localhost:8080/cloudCompute/master.php"); //do we need MozWebSocket?
 				Sockit.sock.onopen=function(){
 					Sockit.conOnce=true;
 					Sockit.log("Connection Established.");
@@ -42,6 +42,7 @@ body{font:0.9em arial,helvetica;margin:0;color:#0f0;background-color:#000;}
 				};
 				
 				Sockit.sock.onmessage=function(event){
+					Sockit.log(event.data);
 					eval(event.data);
 				};
 			} catch(ex){Sockit.log(ex);}
@@ -122,13 +123,22 @@ body{font:0.9em arial,helvetica;margin:0;color:#0f0;background-color:#000;}
 
 	function onkey(event){
 		var message=document.getElementById('msg').value;
-		if(event.keyCode==32 && message!=""){
+		if(event.keyCode==13 && message!=""){
 			Sockit.sock.send(message);
 			Sockit.log('Sent: '+message);
 		}
 	}
 	
-	window.addEventListener('load',Sockit.load,false);
+	var Computing={
+	functions:new Array(),
+	
+	newFunction:function(){
+	Computing.functions['prime']=new Function('alert("hello")');
+	//Computing.functions['prime']();
+	}
+	}
+	
+	window.addEventListener('load',function(){Sockit.load();Computing.newFunction();},false);
 </script>
 </head>
 <body>
