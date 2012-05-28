@@ -247,8 +247,10 @@ class Server {
 			$node = $this->getNodeBySocket($socket);
 			if($node) {
 				$bytes = socket_recv($socket, $data, 2048, 0);
-				echo "received: ".$bytes." bytes of data\n";
-				$this->process($node, $data);
+				if($bytes!=0){
+					echo "received: ".$bytes." bytes of data\n";
+					$this->process($node, $data);
+				}
 			}
 		}
 	}
