@@ -90,10 +90,11 @@ class Node {
 		return $this->handshake;
 	}
 	public function setSpec($spec) {
-		$this->spec = $spec;
+		$this->spec = new $spec;
 	}
 	public function getSpec() {
 		return $this->spec;
 	}
 }
+
 ?>

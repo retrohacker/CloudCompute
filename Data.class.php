@@ -6,7 +6,7 @@ require('mysqlCred');
  * Keep in mind a single project can have multiple data sturctures.
  * A data structure will contain a set of related information all
  * of the same data type (similar to an array). This data will be
- * lumped together into "chunks" of a preditermined size. These
+ * lumped together into "chunks" of a predetermined size. These
  * chunks will contain n elements each. When a node connects
  * to the server, it will be given k chunks where k is proporitonal
  * to the number of clients currently connected to the server.
