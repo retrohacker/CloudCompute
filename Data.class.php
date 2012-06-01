@@ -20,8 +20,6 @@ require('mysqlCred');
  * each node receives an extra 5 chunks of data for a total of 25
  * chunks. If at this point another node connects, that node is given
  * 4 'chunks' from each of the current 4 nodes.
- *
- * @author: William Blankenship
  */
 class Data {
 	//The number of elements to store in a single chunk of data
@@ -71,27 +69,41 @@ class Data {
 		//been done yet
 		if(!self::$mysqlConnection) {
 			self::$mysqlConnection = mysql_connect($mysql_address,$mysql_user_name,$mysql_password);
-			mysql_select_db("cloudCompute",self::$mysqlConnection);
-			echo "\nConnected To Database";
-		}
-		if(!self::$mysqlConnection) {
-			die('unable to connect to database: '.mysql_error());
-		}
+			
+			if(!mysql_query("CREATE DATABASE IF NOT EXISTS cloudCompute",self::$mysqlConnection)){ //make sure that we have a database to select.
+				echo "\nProblem creating database: ".mysql_error();
+			}
+			
+			if(mysql_select_db("cloudCompute",self::$mysqlConnection)){ //connect to the database
+				echo "\nConnected to database.";
+			}
+			else{
+				die('\nUnable to connect to database: '.mysql_error());
+			}
 
-		//Initialize Global Variables for the data set
-		$this->chunkSize = $sizeOfChunk;
-		$this->dataName = $dataName;
-		$this->projectName = $projectName;
-		$this->tempChunk = '';
-		$this->tempChunkLength = 0;
-		$this->totalChunks = $this->initializeChunks();
-		$this->largestInt = 0;
+			if(!mysql_query("CREATE TABLE IF NOT EXISTS chunk( 
+			id int NOT NULL AUTO_INCREMENT,
+			chunk varchar(255), 
+			otherThing varchar(50), 
+			blah char(4),
+			PRIMARY KEY (id)
+			)",self::$mysqlConnection)){echo "\nProblem creating table: ".mysql_error();}
+			
+			//Initialize Global Variables for the data set
+			$this->chunkSize = $sizeOfChunk;
+			$this->dataName = $dataName;
+			$this->projectName = $projectName;
+			$this->tempChunk = '';
+			$this->tempChunkLength = 0;
+			$this->totalChunks = $this->initializeChunks();
+			$this->largestInt = 0;
 
-		//Echo out global variables for debugging
-		echo "\nProject Name: ".$this->projectName;
-		echo "\nData Set: ".$this->dataName;
-		echo "\nChunk Size: ".$this->chunkSize;
-		echo "\nTotal Chunks: ".$this->totalChunks;
+			//Echo out global variables for debugging
+			echo "\nProject Name: ".$this->projectName;
+			echo "\nData Set: ".$this->dataName;
+			echo "\nChunk Size: ".$this->chunkSize;
+			echo "\nTotal Chunks: ".$this->totalChunks;
+		}
 	}
 
 	/**
@@ -101,7 +113,7 @@ class Data {
 	 */
 	private function initializeChunks() {
 		$query = "SELECT * FROM chunks WHERE projectID='".$this->projectName."'";
-		$this->databaseRows = mysql_query($query);
+		$this->databaseRows = mysql_query($query,self::$mysqlConnection);
 		if(!$this->databaseRows) {
 			echo "\nUNABLE TO QUERY DATABASE: ".mysql_error();
 		}
