@@ -1,11 +1,1 @@
-#set default behavior
 text=auto
-
-#Always normalize and convert the following files on checkout
-*
-
-#Files that are binary and we shouldn't touch endline (if we need to add binary
-#file types to the repository add their extensions here)
-*.png
-*.jpg
-
