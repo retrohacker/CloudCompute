@@ -42,28 +42,32 @@ class RFC6455{
 	}
 	
 	/**
-	Unmasks the received frame.
+	 * Unmasks the received frame.
+	 * @param $frame = the frame that was received by the server
 	*/
-	public function decode($payload){
-		$length = ord($payload[1]) & 127;
+	public function decode($frame){
+		$length = ord($frame[1]) & 127; //takes the second byte which is the payload length, converts it to ascii decimal representation, and bitwise ands it with 127 to make sure it is no more than a correct 7 bit bitstring.
 		
-		if($length == 126) {
-			$masks = substr($payload, 4, 4);
-			$data = substr($payload, 8);
+		if($length == 126){ // medium message
+			$masks = substr($frame, 4, 4);
+			$payload = substr($frame, 8);
+			echo "medium message";
 		}
-		elseif($length == 127) {
-			$masks = substr($payload, 10, 4);
-			$data = substr($payload, 14);
+		elseif($length == 127){ // large message
+			$masks = substr($frame, 10, 4);
+			$payload = substr($frame, 14);
+			echo "large message";
 		}
-		else {
-			$masks = substr($payload, 2, 4);
-			$data = substr($payload, 6);
+		else { // small message
+			$masks = substr($frame, 2, 4);
+			$payload = substr($frame, 6);
+			echo "small message";
 		}
 		
-		$text = '';
+		$text="";
 		
-		for($i = 0; $i < strlen($data); ++$i){
-			$text .= $data[$i] ^ $masks[$i%4];
+		for($i=0,$y=strlen($payload);$i<$y;$i++){ //unmasks for every byte in the payload according to specification. Adds unmasked text to a new string.
+			$text .= $payload[$i] ^ $masks[$i%4];
 		}
 		
     return $text;
